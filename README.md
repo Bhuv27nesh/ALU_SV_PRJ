@@ -1,7 +1,7 @@
 # ALU_SV_PRJ
 -----------------------------------------------------------------------------------------
 
-##Project Overview:
+## Project Overview:
 The project focuses on the verification of a parameterized Arithmetic Logic Unit (ALU) 
 which supports a wide range of arithmetic and logical operations. ALU are an integral part 
 of any SOC that performs Arithmetic and logical operations. The ALU supports variety of 
@@ -10,7 +10,7 @@ decrement, and multiplication, as well as logical operations such as AND, OR, XO
 NAND, NOR, and XNOR. In addition, it supports shift and rotate operations. The design 
 also has comparator functions and error checking for invalid command conditions. 
 
-##Verification Objective
+## Verification Objective
 ->Verify functional correctness of all ALU operations — including arithmetic, logical, 
 comparison, and shift/rotate — as determined by CMD and MODE.  
 ->Ensure input protocol compliance by checking that INP_VALID reflects operand 

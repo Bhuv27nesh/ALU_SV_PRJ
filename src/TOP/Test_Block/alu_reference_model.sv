@@ -25,6 +25,7 @@ class alu_reference_model;
   
   // Task which mimics the functionality of the ALU
   task start();
+    reg [POW_2_N - 1:0] SH_AMT;
     for(int i=0; i<`num_transactions; i++) 
 	begin
       	 alu_refmodel = new();
@@ -92,16 +93,21 @@ class alu_reference_model;
         	   else                                                 					//INP_VALID == 3  
 		     begin
 			   int wait_cycles = 0;
-    			   while (alu_refmodel.INP_VALID != 2'b11 && wait_cycles < 16) 
+			    if(alu_refmodel.INP_VALID != 2'b11) || (alu_refmodel.INP_VALID != 2'b00))
 			     begin
-				mbx_dr.get(alu_refmodel);
-      				@(vif.drv_cb);
-      				wait_cycles = wait_cycles + 1;
-	     		     end		
-			    if (alu_refmodel.INP_VALID != 2'b11) 
-		  	      begin
-      				alu_refmodel.ERR = 1; 
-    		 	      end 
+			   	while(wait_cycles < 16) 
+			    	begin
+					@(vif.drv_cb);
+					if(vif.drv_cb.INP_VALID == 2'b11)
+					 begin
+						alu_refmodel.INP_VALID  = vif.drv_cb.INP_VALID;	
+						alu_refmodel.ERR = 0;
+						break;
+					 end
+					alu_refmodel.ERR = 1;
+					wait_cycles++;
+			   	end
+			    end
 			    else 
 			      begin
           			alu_refmodel.ERR = 0;
@@ -149,11 +155,11 @@ class alu_reference_model;
               							end
             					 end
             				4'b1001: begin								//INC_A * INC_B
-							repeat(2) @(vif.drv_cb);
+							repeat(2) @(vif.drv_cb);				//can remove delay
               						alu_refmodel.RES = (alu_refmodel.OPA + 1) * (alu_refmodel.OPB + 1);
             					 end
             				4'b1010: begin								//SHL1_A * OPB
-							repeat(2) @(vif.drv_cb);
+							repeat(2) @(vif.drv_cb);				//can remove delay
               						alu_refmodel.RES = (alu_refmodel.OPA << 1) * alu_refmodel.OPB;
             					end
             				default: alu_refmodel.RES = alu_refmodel.RES;
@@ -171,13 +177,13 @@ class alu_reference_model;
 			   begin
           			case(alu_refmodel.CMD)
            				4'b0110: begin
-             						alu_refmodel.RES = ~alu_refmodel.OPA;			//NOT_A
+             						alu_refmodel.RES = {1'b0,(~alu_refmodel.OPA)};			//NOT_A
 						 end
            				4'b1000: begin
-             						alu_refmodel.RES = alu_refmodel.OPA >> 1;		//SHR1_A
+             						alu_refmodel.RES = {1'b0, (alu_refmodel.OPA >> 1)};		//SHR1_A
 						 end
            				4'b1001: begin 
-             						alu_refmodel.RES = alu_refmodel.OPA << 1;		//SHL1_A
+             						alu_refmodel.RES = {1'b0, (alu_refmodel.OPA << 1)};		//SHL1_A
 						 end
             				default: alu_refmodel.RES = 0;
             			endcase 
@@ -186,13 +192,13 @@ class alu_reference_model;
 			    begin
           			case(alu_refmodel.CMD)
            				4'b0111: begin
-             						alu_refmodel.RES = ~alu_refmodel.OPB;			//NOT_B
+             						alu_refmodel.RES = {1'b0, (~alu_refmodel.OPB)};			//NOT_B
 						 end
             				4'b1010: begin
-              						alu_refmodel.RES = alu_refmodel.OPB >> 1;		//SHR1_B
+              						alu_refmodel.RES = {1'b0, (alu_refmodel.OPB >> 1)};		//SHR1_B
 						 end
             				4'b1011: begin
-              						alu_refmodel.RES = alu_refmodel.OPB << 1;		//SHL1_B
+              						alu_refmodel.RES = {1'b0, (alu_refmodel.OPB << 1)};		//SHL1_B
 						 end
             				default: alu_refmodel.RES = 0;
             			endcase 
@@ -200,40 +206,46 @@ class alu_reference_model;
 			  else 
 			     begin
 			   	int wait_cycles = 0;
-    			   	while (alu_refmodel.INP_VALID != 2'b11 && wait_cycles < 16) 
-			     	   begin
-      					@(vif.drv_cb);
-      					wait_cycles = wait_cycles + 1;
-	     		     	   end		
-			      if (alu_refmodel.INP_VALID != 2'b11) 
-		  	      	begin
-      			       	   alu_refmodel.ERR = 1; 
-    		 	      	end 
+			    	if((alu_refmodel.INP_VALID != 2'b11) || (alu_refmodel.INP_VALID != 2'b00))
+			     	  begin
+			   		while(wait_cycles < 16) 
+			    		 begin
+						@(vif.drv_cb);
+						if(vif.drv_cb.INP_VALID == 2'b11)
+					 	 begin
+							alu_refmodel.INP_VALID  = vif.drv_cb.INP_VALID;	
+							alu_refmodel.ERR = 0;
+							break;
+					 	 end
+						 alu_refmodel.ERR = 1;
+						 wait_cycles++;
+			   		 end
+			    	end
 			      else 
 			       begin
           			alu_refmodel.ERR = 0;
             				case(alu_refmodel.CMD) 
-              					4'b0000: alu_refmodel.RES =  alu_refmodel.OPA & alu_refmodel.OPB;	//AND
-              					4'b0001: alu_refmodel.RES = ~(alu_refmodel.OPA & alu_refmodel.OPB);	//NAND
-              					4'b0010: alu_refmodel.RES = alu_refmodel.OPA | alu_refmodel.OPB;	//OR
-              					4'b0011: alu_refmodel.RES = ~(alu_refmodel.OPA | alu_refmodel.OPB);	//NOR
-              					4'b0100: alu_refmodel.RES = alu_refmodel.OPA ^ alu_refmodel.OPB;	//XOR
-              					4'b0101: alu_refmodel.RES = ~(alu_refmodel.OPA ^ alu_refmodel.OPB);	//XNOR
-              					4'b0110: alu_refmodel.RES = ~alu_refmodel.OPA;				//NOT_A
-              					4'b0111: alu_refmodel.RES = ~alu_refmodel.OPB;				//NOT_B
-              					4'b1000: alu_refmodel.RES = alu_refmodel.OPA >> 1;			//SHR1_A
-              					4'b1001: alu_refmodel.RES = alu_refmodel.OPA << 1;			//SHL1_A
-              					4'b1010: alu_refmodel.RES = alu_refmodel.OPB >> 1;			//SHR1_B
-              					4'b1011: alu_refmodel.RES = alu_refmodel.OPB << 1;			//SHL1_B
-              					4'b1100: begin								//ROL_A_B
-								int shift = alu_refmodel.OPB % `DATA_WIDTH;
-    								alu_refmodel.RES = (alu_refmodel.OPA << shift) | (alu_refmodel.OPA >> (`DATA_WIDTH - shift));
-    								alu_refmodel.ERR = |(alu_refmodel.OPB >> $clog2(`DATA_WIDTH)) ? 1 : 0;
+              					4'b0000: alu_refmodel.RES = {1'b0, (alu_refmodel.OPA & alu_refmodel.OPB)};	//AND
+              					4'b0001: alu_refmodel.RES = {1'b0, (~(alu_refmodel.OPA & alu_refmodel.OPB))};	//NAND
+              					4'b0010: alu_refmodel.RES = {1'b0, (alu_refmodel.OPA | alu_refmodel.OPB)};	//OR
+              					4'b0011: alu_refmodel.RES = {1'b0, (~(alu_refmodel.OPA | alu_refmodel.OPB))};	//NOR
+              					4'b0100: alu_refmodel.RES = {1'b0, (alu_refmodel.OPA ^ alu_refmodel.OPB)};	//XOR
+              					4'b0101: alu_refmodel.RES = {1'b0, (~(alu_refmodel.OPA ^ alu_refmodel.OPB))};	//XNOR
+              					4'b0110: alu_refmodel.RES = {1'b0, (~alu_refmodel.OPA)};			//NOT_A
+              					4'b0111: alu_refmodel.RES = {1'b0, (~alu_refmodel.OPB)};			//NOT_B
+              					4'b1000: alu_refmodel.RES = {1'b0, (alu_refmodel.OPA >> 1)};			//SHR1_A
+              					4'b1001: alu_refmodel.RES = {1'b0, (alu_refmodel.OPA << 1)};			//SHL1_A
+              					4'b1010: alu_refmodel.RES = {1'b0, (alu_refmodel.OPB >> 1)};			//SHR1_B
+              					4'b1011: alu_refmodel.RES = {1'b0, (alu_refmodel.OPB << 1)};			//SHL1_B
+              					4'b1100: begin									//ROL_A_B
+				  				SH_AMT = alu_refmodel.OPB[POW_2_N - 1:0];
+                                  				alu_refmodel.RES = {1'b0, alu_refmodel.OPA << SH_AMT | alu_refmodel.OPA >> (`DATA_WIDTH - SH_AMT)};
+                                  				alu_refmodel.ERR = |alu_refmodel.OPB[`DATA_WIDTH - 1 : POW_2_N +1];
 							 end
-              					4'b1101: begin								//ROR_A_B
-								int shift = alu_refmodel.OPB % `DATA_WIDTH;
-    								alu_refmodel.RES = (alu_refmodel.OPA >> shift) | (alu_refmodel.OPA << (`DATA_WIDTH - shift));
-    								alu_refmodel.ERR = |(alu_refmodel.OPB >> $clog2(`DATA_WIDTH)) ? 1 : 0;
+              					4'b1101: begin									//ROR_A_B
+				  				SH_AMT = alu_refmodel.OPB[POW_2_N - 1:0];
+                                  				alu_refmodel.RES = {1'b0, alu_refmodel.OPA << (WIDTH - SH_AMT) | alu_refmodel.OPA >> SH_AMT};
+                                  				alu_refmodel.ERR = |alu_refmodel.OPB[`DATA_WIDTH - 1 : POW_2_N +1];
 							 end
 				              	default: alu_refmodel.RES = alu_refmodel.RES;
 					endcase

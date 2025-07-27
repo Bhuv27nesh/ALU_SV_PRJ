@@ -1,5 +1,3 @@
-`include "alu_defines.sv"
-
 class alu_test;
     // PROPERTIES
     // Virtual interfaces for driver, monitor, and reference model

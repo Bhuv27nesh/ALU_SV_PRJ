@@ -30,6 +30,7 @@ interface alu_if(input bit clk,reset);
   clocking ref_cb@(posedge clk);
   //Specifying the values for input and output skews
   default input #0 output #0;
+  input reset;
   endclocking
   
 //modports for driver, monitor and reference model

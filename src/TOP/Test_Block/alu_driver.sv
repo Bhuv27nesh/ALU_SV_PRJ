@@ -1,14 +1,14 @@
 `include "alu_defines.sv"
 
 class alu_driver;
-//PROPERTIES  
+//PROPERTIES
   //ALU transaction class handle
   alu_transaction tx;
   //Mailbox for generator to driver connection
   mailbox #(alu_transaction) mbx_gd;
   //Mailbox for driver to reference model connection
   mailbox #(alu_transaction) mbx_dr;
-  //Virtual interface with driver modport and it's instance 
+  //Virtual interface with driver modport and it's instance
   virtual alu_if.DRV alu_vif;
 
   // FUNCTIONAL COVERAGE
@@ -36,24 +36,10 @@ class alu_driver;
   endfunction
 
 
-//-----------------------------------------------------------------
-  task drive_inputs(alu_transaction t);
-    @(alu_vif.drv_cb);
-    alu_vif.drv_cb.OPA       <= t.OPA;
-    alu_vif.drv_cb.OPB       <= t.OPB;
-    alu_vif.drv_cb.CIN       <= t.CIN;
-    alu_vif.drv_cb.CE        <= t.CE;
-    alu_vif.drv_cb.MODE      <= t.MODE;
-    alu_vif.drv_cb.INP_VALID <= t.INP_VALID;
-    alu_vif.drv_cb.CMD       <= t.CMD;
-  endtask
-//----------------------------------------------------------------
-
-
   // DRIVER MAIN TASK
   task start();
     repeat (5) @(alu_vif.drv_cb);
-    
+
     for (int i = 0; i < `num_transactions; i++) begin
       tx = new();
       mbx_gd.get(tx);
@@ -71,30 +57,38 @@ class alu_driver;
         alu_vif.drv_cb.INP_VALID <= 'd0;
         alu_vif.drv_cb.CMD       <= 'd0;
         repeat (1) @(alu_vif.drv_cb);
-	mbx_dr.put(tx);
+        mbx_dr.put(tx);
         $display("%0t | DRIVER: Reset applied", $time);
       end
 
       // Proceed only if CE is active
       if (alu_vif.drv_cb.CE) begin
 
-      	if ((tx.MODE == 1 && !(tx.CMD inside {[0:10]})) || (tx.MODE == 0 && !(tx.CMD inside {[0:13]})) || (tx.INP_VALID == 2'b00)) begin
-    		drv_trans.ERR 	= 1'b1;
-    		drv_trans.RES 	= 'd0;
-    		drv_trans.OFLOW = 'd0;
-    		drv_trans.COUT 	= 'd0;
-    		drv_trans.G 	= 'd0;
-    		drv_trans.L 	= 'd0;
-    		drv_trans.E 	= 'd0;
-          	drive_inputs(tx);	
-		repeat (1) @(alu_vif.drv_cb);
-          	mbx_dr.put(tx);
-          	$display("--------------------------------------------------------------------------------------------------------------");
-          	$display("%0t | DRIVER: A = %0d | B =%0d | CIN = %0d | RST = %d | CE = %0d | MODE =%0d | INPVALID = %0d | CMD = %0d", $time,
+        if ((tx.MODE == 1 && !(tx.CMD inside {[0:10]})) || (tx.MODE == 0 && !(tx.CMD inside {[0:13]})) || (tx.INP_VALID == 2'b00)) begin
+                tx.ERR  = 1'b1;
+                tx.RES  = 'd0;
+                tx.OFLOW = 'd0;
+                tx.COUT         = 'd0;
+                tx.G    = 'd0;
+                tx.L    = 'd0;
+                tx.E    = 'd0;
+
+                alu_vif.drv_cb.OPA       <= tx.OPA;
+                alu_vif.drv_cb.OPB       <= tx.OPB;
+                alu_vif.drv_cb.CIN       <= tx.CIN;
+                alu_vif.drv_cb.CE        <= tx.CE;
+                alu_vif.drv_cb.MODE      <= tx.MODE;
+                alu_vif.drv_cb.INP_VALID <= tx.INP_VALID;
+                alu_vif.drv_cb.CMD       <= tx.CMD;
+
+                repeat (1) @(alu_vif.drv_cb);
+                mbx_dr.put(tx);
+                $display("--------------------------------------------------------------------------------------------------------------");
+                $display("%0t | DRIVER: A = %0d | B =%0d | CIN = %0d | RST = %d | CE = %0d | MODE =%0d | INPVALID = %0d | CMD = %0d", $time,
                     alu_vif.drv_cb.OPA, alu_vif.drv_cb.OPB, alu_vif.drv_cb.CIN,
                     alu_vif.drv_cb.reset, alu_vif.drv_cb.CE, alu_vif.drv_cb.MODE,
                     alu_vif.drv_cb.INP_VALID, alu_vif.drv_cb.CMD);
-	
+
         end
 
         // Case 1: Single operand commands (INC/DEC A or B)
@@ -103,8 +97,14 @@ class alu_driver;
             ((tx.MODE == 0) && (tx.INP_VALID == 2'b01) && (tx.CMD inside {4'b0110, 4'b1000, 4'b1001})) ||
             ((tx.MODE == 0) && (tx.INP_VALID == 2'b10) && (tx.CMD inside {4'b0111, 4'b1010, 4'b1011}))) begin
 
-          drive_inputs(tx);
-	  repeat (1) @(alu_vif.drv_cb);
+          alu_vif.drv_cb.OPA       <= tx.OPA;
+          alu_vif.drv_cb.OPB       <= tx.OPB;
+          alu_vif.drv_cb.CIN       <= tx.CIN;
+          alu_vif.drv_cb.CE        <= tx.CE;
+          alu_vif.drv_cb.MODE      <= tx.MODE;
+          alu_vif.drv_cb.INP_VALID <= tx.INP_VALID;
+          alu_vif.drv_cb.CMD       <= tx.CMD;
+          repeat (1) @(alu_vif.drv_cb);
           mbx_dr.put(tx);
           $display("--------------------------------------------------------------------------------------------------------------");
           $display("%0t | DRIVER: A = %0d | B =%0d | CIN = %0d | RST = %d | CE = %0d | MODE =%0d | INPVALID = %0d | CMD = %0d", $time,
@@ -115,8 +115,14 @@ class alu_driver;
 
         // Case 2: INP_VALID not 2'b11: wait till 2'b11 or timeout
         else if ((tx.INP_VALID != 2'b11) || (tx.INP_VALID == 2'b00)) begin
-	  drive_inputs(tx);
-          @(alu_vif.drv_cb); 
+          alu_vif.drv_cb.OPA       <= tx.OPA;
+          alu_vif.drv_cb.OPB       <= tx.OPB;
+          alu_vif.drv_cb.CIN       <= tx.CIN;
+          alu_vif.drv_cb.CE        <= tx.CE;
+          alu_vif.drv_cb.MODE      <= tx.MODE;
+          alu_vif.drv_cb.INP_VALID <= tx.INP_VALID;
+          alu_vif.drv_cb.CMD       <= tx.CMD;
+          @(alu_vif.drv_cb);
           tx.MODE.rand_mode(0);
           tx.CMD.rand_mode(0);
           mbx_dr.put(tx);
@@ -127,21 +133,27 @@ class alu_driver;
                     alu_vif.drv_cb.INP_VALID, alu_vif.drv_cb.CMD);
 
           for (int j = 0; j < 16; j++) begin
-            @(alu_vif.drv_cb); 
+            @(alu_vif.drv_cb);
             void'(tx.randomize());
             @(alu_vif.drv_cb);
 
             if (tx.INP_VALID == 2'b11) begin
-          	drive_inputs(tx);		
-          	@(alu_vif.drv_cb); 
-          	mbx_dr.put(tx);
-          	$display("--------------------------------------------------------------------------------------------------------------");
-          	$display("%0t | DRIVER: A = %0d | B =%0d | CIN = %0d | RST = %d | CE = %0d | MODE =%0d | INPVALID = %0d | CMD = %0d", $time,
+                alu_vif.drv_cb.OPA       <= tx.OPA;
+                alu_vif.drv_cb.OPB       <= tx.OPB;
+                alu_vif.drv_cb.CIN       <= tx.CIN;
+                alu_vif.drv_cb.CE        <= tx.CE;
+                alu_vif.drv_cb.MODE      <= tx.MODE;
+                alu_vif.drv_cb.INP_VALID <= tx.INP_VALID;
+                alu_vif.drv_cb.CMD       <= tx.CMD;
+                @(alu_vif.drv_cb);
+                mbx_dr.put(tx);
+                $display("--------------------------------------------------------------------------------------------------------------");
+                $display("%0t | DRIVER: A = %0d | B =%0d | CIN = %0d | RST = %d | CE = %0d | MODE =%0d | INPVALID = %0d | CMD = %0d", $time,
                     alu_vif.drv_cb.OPA, alu_vif.drv_cb.OPB, alu_vif.drv_cb.CIN,
                     alu_vif.drv_cb.reset, alu_vif.drv_cb.CE, alu_vif.drv_cb.MODE,
-                    alu_vif.drv_cb.INP_VALID, alu_vif.drv_cb.CMD);	
-              	break;
-	    end
+                    alu_vif.drv_cb.INP_VALID, alu_vif.drv_cb.CMD);
+                break;
+            end
           end
 
           drv_cg.sample();
@@ -155,9 +167,15 @@ class alu_driver;
 
         // Case 3: Regular valid transaction
         else begin
-          drive_inputs(tx);
+          alu_vif.drv_cb.OPA       <= tx.OPA;
+          alu_vif.drv_cb.OPB       <= tx.OPB;
+          alu_vif.drv_cb.CIN       <= tx.CIN;
+          alu_vif.drv_cb.CE        <= tx.CE;
+          alu_vif.drv_cb.MODE      <= tx.MODE;
+          alu_vif.drv_cb.INP_VALID <= tx.INP_VALID;
+          alu_vif.drv_cb.CMD       <= tx.CMD;
           repeat(1) @(alu_vif.drv_cb);
-	  mbx_dr.put(tx);
+          mbx_dr.put(tx);
           $display("--------------------------------------------------------------------------------------------------------------");
           $display("%0t | DRIVER: A = %0d | B =%0d | CIN = %0d | RST = %d | CE = %0d | MODE =%0d | INPVALID = %0d | CMD = %0d", $time,
                     alu_vif.drv_cb.OPA, alu_vif.drv_cb.OPB, alu_vif.drv_cb.CIN,

@@ -1,6 +1,6 @@
 `include "alu_defines.sv"
 
-iferface alu_if(input bit clk,reset);
+interface alu_if(input bit clk,reset);
 //Declaring signals with width
   logic [`DATA_WIDTH-1:0] OPA,OPB;
   logic [(2*`DATA_WIDTH)-1:0] RES;
@@ -36,4 +36,4 @@ iferface alu_if(input bit clk,reset);
  modport DRV(clocking drv_cb);
  modport MON(clocking mon_cb);
  modport REF_SB(clocking ref_cb);
-endiferface
+endinterface

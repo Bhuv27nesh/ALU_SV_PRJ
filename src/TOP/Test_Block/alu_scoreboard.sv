@@ -7,8 +7,8 @@ class alu_scoreboard;
   alu_transaction mon_sb_txn;
 
   // Mailboxes for communication
-  mailbox #(alu_transaction) mbx_rs;  // Reference Model -> Scoreboard
-  mailbox #(alu_transaction) mbx_ms;  // Monitor -> Scoreboard
+  mailbox #(alu_transaction) mbx_rs;  
+  mailbox #(alu_transaction) mbx_ms;  
 
   // Match / mismatch counters per field
   int res_match = 0, res_mismatch = 0;
@@ -19,26 +19,26 @@ class alu_scoreboard;
   int l_match = 0, l_mismatch = 0;
   int e_match = 0, e_mismatch = 0;
 
-  // Overall match/mismatch counters
+
   int overall_match = 0;
   int overall_mismatch = 0;
 
-  // Constructor to bind mailboxes
+
   function new(mailbox #(alu_transaction) mbx_rs, mailbox #(alu_transaction) mbx_ms);
     this.mbx_rs = mbx_rs;
     this.mbx_ms = mbx_ms;
   endfunction
 
-  // Task to run the scoreboard logic
+
   task start();
     for (int i = 0; i < `num_transactions; i++) begin
-      // Create new transaction objects per iteration OUTSIDE fork
+
       ref_sb_txn = new();
       mon_sb_txn = new();
 
       fork
         begin
-          // Get transactions from mailboxes (blocking)
+
           mbx_rs.get(ref_sb_txn);
           mbx_ms.get(mon_sb_txn);
 
@@ -49,7 +49,7 @@ class alu_scoreboard;
                    mon_sb_txn.RES, mon_sb_txn.COUT, mon_sb_txn.ERR, mon_sb_txn.OFLOW, mon_sb_txn.G, mon_sb_txn.L, mon_sb_txn.E);
           $display("---------------------------------------------------");
 
-          // Compare each field and update counters
+
           if (ref_sb_txn.RES == mon_sb_txn.RES) begin
             res_match++;
             $display("[PASS] RES match: %0d", ref_sb_txn.RES);
@@ -106,7 +106,7 @@ class alu_scoreboard;
             $display("[FAIL] E mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.E, mon_sb_txn.E);
           end
 
-          // Overall transaction-level match check
+
           if ((ref_sb_txn.RES == mon_sb_txn.RES) &&
               (ref_sb_txn.ERR == mon_sb_txn.ERR) &&
               (ref_sb_txn.COUT == mon_sb_txn.COUT) &&
@@ -126,7 +126,7 @@ class alu_scoreboard;
       join
     end
 
-    // Final summary output
+
     $display("=========== Scoreboard Summary ===========");
     $display("Total Transactions = %0d", `num_transactions);
     $display("RES Matches = %0d, Mismatches = %0d", res_match, res_mismatch);

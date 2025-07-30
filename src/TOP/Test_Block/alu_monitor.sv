@@ -9,7 +9,7 @@ class alu_monitor;
   virtual alu_if.MON mon_vif;
 
    covergroup mon_cg;
-      RESULT  : coverpoint mon_trans.RES {bins result = {[0:9'b111111111]};}
+    RESULT  : coverpoint mon_trans.RES {bins result = {[0:(2*`DATA_WIDTH + 1)]};}
       ERROR   : coverpoint mon_trans.ERR;
       EQUAL   : coverpoint mon_trans.E {bins equal   = {1};}
       GREATER : coverpoint mon_trans.G {bins greater = {1};}

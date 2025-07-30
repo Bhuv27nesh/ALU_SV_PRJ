@@ -31,7 +31,7 @@ class alu_scoreboard;
           mbx_ms.get(mon_sb_txn); 
           mbx_rs.get(ref_sb_txn); 
 
-          $display("%0t |INPUTS | OPA = %0d | OPB = %0d | CIN = %0d |INP_VALID == %2b ",$time,ref_sb_txn.OPA,ref_sb_txn.OPB,ref_sb_txn.CIN,ref_sb_txn.INP_VALID);
+	  $display("%0t |INPUTS | OPA = %0d | OPB = %0d | CIN = %0d |INP_VALID == %2b | MODE = %0b | CMD = %4b",$time,ref_sb_txn.OPA,ref_sb_txn.OPB,ref_sb_txn.CIN,ref_sb_txn.INP_VALID,ref_sb_txn.MODE,ref_sb_txn.CMD);
           $display("");
           $display("%0t |MONITOR | RES = %0d | OFLOW = %0b | COUT = %0b | G = %0b | L = %0b | E = %0b | ERR = %0b |",$time,mon_sb_txn.RES,mon_sb_txn.OFLOW,mon_sb_txn.COUT,mon_sb_txn.G,mon_sb_txn.L,mon_sb_txn.E,mon_sb_txn.ERR);
           $display("");

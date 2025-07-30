@@ -1,144 +1,69 @@
 `include "alu_defines.sv"
 
 class alu_scoreboard;
+  alu_transaction ref_sb_txn;//from reference
+  alu_transaction mon_sb_txn;//from monitor
+  // mailbox for monitor and scoreboard
+  mailbox #(alu_transaction) mbx_ms;
+  // mailbox for ref model and scoreboard
+  mailbox #(alu_transaction) mbx_rs;
 
-  // Transactions from Reference Model and Monitor
-  alu_transaction ref_sb_txn;
-  alu_transaction mon_sb_txn;
+  int MATCH = 0;
+  int MISMATCH = 0;
 
-  // Mailboxes for communication
-  mailbox #(alu_transaction) mbx_rs;  
-  mailbox #(alu_transaction) mbx_ms;  
-
-  // Match / mismatch counters per field
-  int res_match = 0, res_mismatch = 0;
-  int err_match = 0, err_mismatch = 0;
-  int cout_match = 0, cout_mismatch = 0;
-  int oflow_match = 0, oflow_mismatch = 0;
-  int g_match = 0, g_mismatch = 0;
-  int l_match = 0, l_mismatch = 0;
-  int e_match = 0, e_mismatch = 0;
-
-
-  int overall_match = 0;
-  int overall_mismatch = 0;
-
-
-  function new(mailbox #(alu_transaction) mbx_rs, mailbox #(alu_transaction) mbx_ms);
-    this.mbx_rs = mbx_rs;
+//METHODS
+  //Explicitly overriding the constructor to make mailbox connection from monitor
+  //to scoreboard, to make mailbox connection from reference model to scoreboard
+  function new(mailbox #(alu_transaction) mbx_rs,
+	       mailbox #(alu_transaction) mbx_ms);
     this.mbx_ms = mbx_ms;
+    this.mbx_rs = mbx_rs;
   endfunction
 
-
+//Task which collects data_out from reference model and scoreboard 
+//and sotres them in their respective memories
   task start();
-    for (int i = 0; i < `num_transactions; i++) begin
-
+    for(int i = 0; i < `num_transaction; i++) begin 
       ref_sb_txn = new();
       mon_sb_txn = new();
+	begin
+          $display(" ---------------------REFERENCE_MODEL----------------- ");
+          mbx_ms.get(mon_sb_txn); 
+          mbx_rs.get(ref_sb_txn); 
 
-      fork
-        begin
-
-          mbx_rs.get(ref_sb_txn);
-          mbx_ms.get(mon_sb_txn);
-
-          $display("\n--- Scoreboard Transaction #%0d ---", i + 1);
-          $display("Reference Model: RES=%0d, COUT=%0d, ERR=%0d, OFLOW=%0d, G=%0d, L=%0d, E=%0d",
-                   ref_sb_txn.RES, ref_sb_txn.COUT, ref_sb_txn.ERR, ref_sb_txn.OFLOW, ref_sb_txn.G, ref_sb_txn.L, ref_sb_txn.E);
-          $display("Monitor        : RES=%0d, COUT=%0d, ERR=%0d, OFLOW=%0d, G=%0d, L=%0d, E=%0d",
-                   mon_sb_txn.RES, mon_sb_txn.COUT, mon_sb_txn.ERR, mon_sb_txn.OFLOW, mon_sb_txn.G, mon_sb_txn.L, mon_sb_txn.E);
-          $display("---------------------------------------------------");
-
-
-          if (ref_sb_txn.RES == mon_sb_txn.RES) begin
-            res_match++;
-            $display("[PASS] RES match: %0d", ref_sb_txn.RES);
-          end else begin
-            res_mismatch++;
-            $display("[FAIL] RES mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.RES, mon_sb_txn.RES);
-          end
-
-          if (ref_sb_txn.ERR == mon_sb_txn.ERR) begin
-            err_match++;
-            $display("[PASS] ERR match: %0d", ref_sb_txn.ERR);
-          end else begin
-            err_mismatch++;
-            $display("[FAIL] ERR mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.ERR, mon_sb_txn.ERR);
-          end
-
-          if (ref_sb_txn.COUT == mon_sb_txn.COUT) begin
-            cout_match++;
-            $display("[PASS] COUT match: %0d", ref_sb_txn.COUT);
-          end else begin
-            cout_mismatch++;
-            $display("[FAIL] COUT mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.COUT, mon_sb_txn.COUT);
-          end
-
-          if (ref_sb_txn.OFLOW == mon_sb_txn.OFLOW) begin
-            oflow_match++;
-            $display("[PASS] OFLOW match: %0d", ref_sb_txn.OFLOW);
-          end else begin
-            oflow_mismatch++;
-            $display("[FAIL] OFLOW mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.OFLOW, mon_sb_txn.OFLOW);
-          end
-
-          if (ref_sb_txn.G == mon_sb_txn.G) begin
-            g_match++;
-            $display("[PASS] G match: %0d", ref_sb_txn.G);
-          end else begin
-            g_mismatch++;
-            $display("[FAIL] G mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.G, mon_sb_txn.G);
-          end
-
-          if (ref_sb_txn.L == mon_sb_txn.L) begin
-            l_match++;
-            $display("[PASS] L match: %0d", ref_sb_txn.L);
-          end else begin
-            l_mismatch++;
-            $display("[FAIL] L mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.L, mon_sb_txn.L);
-          end
-
-          if (ref_sb_txn.E == mon_sb_txn.E) begin
-            e_match++;
-            $display("[PASS] E match: %0d", ref_sb_txn.E);
-          end else begin
-            e_mismatch++;
-            $display("[FAIL] E mismatch: Reference=%0d Monitor=%0d", ref_sb_txn.E, mon_sb_txn.E);
-          end
-
-
-          if ((ref_sb_txn.RES == mon_sb_txn.RES) &&
-              (ref_sb_txn.ERR == mon_sb_txn.ERR) &&
-              (ref_sb_txn.COUT == mon_sb_txn.COUT) &&
-              (ref_sb_txn.OFLOW == mon_sb_txn.OFLOW) &&
-              (ref_sb_txn.G == mon_sb_txn.G) &&
-              (ref_sb_txn.L == mon_sb_txn.L) &&
-              (ref_sb_txn.E == mon_sb_txn.E)) begin
-            overall_match++;
-            $display("\n[OVERALL PASS] Transaction #%0d matches perfectly!", i + 1);
-          end else begin
-            overall_mismatch++;
-            $display("\n[OVERALL FAIL] Transaction #%0d has mismatches.", i + 1);
-          end
-
-          $display("---------------------------------------------------\n");
-        end
-      join
+          $display("%0t |INPUTS | OPA = %0d | OPB = %0d | CIN = %0d |INP_VALID == %2b ",$time,ref_sb_txn.OPA,ref_sb_txn.OPB,ref_sb_txn.CIN,ref_sb_txn.INP_VALID);
+          $display("");
+          $display("%0t |MONITOR | RES = %0d | OFLOW = %0b | COUT = %0b | G = %0b | L = %0b | E = %0b | ERR = %0b |",$time,mon_sb_txn.RES,mon_sb_txn.OFLOW,mon_sb_txn.COUT,mon_sb_txn.G,mon_sb_txn.L,mon_sb_txn.E,mon_sb_txn.ERR);
+          $display("");
+          $display("%0t |REF_MODEL | RES = %0d | OFLOW = %0b | COUT = %0b | G = %0b | L = %0b | E = %0b | ERR = %0b |",$time,ref_sb_txn.RES,ref_sb_txn.OFLOW,ref_sb_txn.COUT,ref_sb_txn.G,ref_sb_txn.L,ref_sb_txn.E,ref_sb_txn.ERR);
+          $display("");
+          compare_report();
+          $display("");
+        end   
     end
+     
+    $display(" ---------------------REFERENCE_MODEL----------------- ");
+    $display("TOTAL MATCH : %0d | TOTAL MISMATCH : %0d",MATCH,MISMATCH);
+  endtask
 
 
-    $display("=========== Scoreboard Summary ===========");
-    $display("Total Transactions = %0d", `num_transactions);
-    $display("RES Matches = %0d, Mismatches = %0d", res_match, res_mismatch);
-    $display("ERR Matches = %0d, Mismatches = %0d", err_match, err_mismatch);
-    $display("COUT Matches = %0d, Mismatches = %0d", cout_match, cout_mismatch);
-    $display("OFLOW Matches = %0d, Mismatches = %0d", oflow_match, oflow_mismatch);
-    $display("G Matches = %0d, Mismatches = %0d", g_match, g_mismatch);
-    $display("L Matches = %0d, Mismatches = %0d", l_match, l_mismatch);
-    $display("E Matches = %0d, Mismatches = %0d", e_match, e_mismatch);
-    $display("Overall Matches = %0d", overall_match);
-    $display("Overall Mismatches = %0d", overall_mismatch);
-    $display("==========================================");
+ task compare_report();
+    if(
+      mon_sb_txn.RES === ref_sb_txn.RES &&
+      mon_sb_txn.OFLOW === ref_sb_txn.OFLOW &&
+      mon_sb_txn.COUT === ref_sb_txn.COUT &&
+      mon_sb_txn.G === ref_sb_txn.G &&
+      mon_sb_txn.L === ref_sb_txn.L &&
+      mon_sb_txn.E === ref_sb_txn.E &&
+      mon_sb_txn.ERR === ref_sb_txn.ERR
+    ) begin 
+        MATCH = MATCH + 1;
+        $display(" MATCH SUCCESSFUL | MATCH COUNT = %0d ",MATCH);
+    end 
+    else begin 
+      MISMATCH = MISMATCH + 1;
+      $display("MATCH FAILED | MISMATCH COUNT = %0d",MISMATCH);
+    end 
   endtask
 
 endclass

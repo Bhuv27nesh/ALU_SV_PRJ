@@ -151,7 +151,7 @@ endtask
 
               case(ref_trans.INP_VALID)
                 2'b00 : begin 								// INP_VALID == 0
-                  ref_trans.RES = 0;
+                  ref_trans.RES = 'bz;
                   ref_trans.ERR = 1;
                 end
                 2'b01 : begin								// INP_VALID == 1
@@ -165,7 +165,7 @@ endtask
                       ref_trans.OFLOW = ref_trans.RES[`DATA_WIDTH];
                     end
                     default : begin
-                      ref_trans.RES = 0;
+                      ref_trans.RES = 'bz;
                       ref_trans.ERR = 1;
                     end
                   endcase
@@ -181,7 +181,7 @@ endtask
                       ref_trans.OFLOW = ref_trans.RES[`DATA_WIDTH];
                     end
                     default : begin
-                      ref_trans.RES = 0;
+                      ref_trans.RES = 'bz;
                       ref_trans.ERR = 1;
                     end
                   endcase                
@@ -235,13 +235,13 @@ endtask
                       ref_trans.RES = (ref_trans.OPA << 1) * (ref_trans.OPB);
                     end
                     default : begin
-                      ref_trans.RES = 0;
+                      ref_trans.RES = 'bz;
                       ref_trans.ERR = 1;
                     end
                   endcase
                 end
                 default : begin 
-                  ref_trans.RES = 0;
+                  ref_trans.RES = 'bz;
                   ref_trans.ERR = 1;
                 end
               endcase
@@ -250,7 +250,7 @@ endtask
           else begin 								// MODE == 0 | LOGICAL MODE
             case(ref_trans.INP_VALID)
               2'b00 : begin 							// INP_VALID == 0
-                ref_trans.RES = 0;
+                ref_trans.RES = 'bz;
                 ref_trans.ERR = 1;
               end 
               2'b01 : begin 							// INP_VALID == 1
@@ -266,7 +266,7 @@ endtask
                     ref_trans.RES = (ref_trans.OPA << 1);
                   end 
                   default : begin 
-                    ref_trans.RES = 0;
+                    ref_trans.RES = 'bz;
                     ref_trans.ERR = 1;
                   end 
                 endcase
@@ -284,7 +284,7 @@ endtask
                     ref_trans.RES = (ref_trans.OPB << 1);
                   end 
                   default : begin 
-                    ref_trans.RES = 0;
+                    ref_trans.RES = 'bz;
                     ref_trans.ERR = 1;
                   end 
                 endcase
@@ -342,7 +342,7 @@ endtask
                   4'b1100 : begin 						//ROL_A_B
                     if(| (ref_trans.OPB[`DATA_WIDTH-1 : `SHIFT_WIDTH + 1])) begin
                       ref_trans.ERR = 1;
-                      ref_trans.RES = 0;
+                      ref_trans.RES = 'bz;
                     end
                     else
                       ref_trans.RES = (ref_trans.OPA << ref_trans.OPB[`SHIFT_WIDTH - 1:0]) | (ref_trans.OPA >> (`DATA_WIDTH - ref_trans.OPB[`SHIFT_WIDTH - 1: 0]));
@@ -350,7 +350,7 @@ endtask
                   4'b1101 : begin 						//ROR_A_B
                     if(| (ref_trans.OPB[`DATA_WIDTH-1 : `SHIFT_WIDTH + 1])) begin
                       ref_trans.ERR = 1;
-                      ref_trans.RES = 0;
+                      ref_trans.RES = 'bz;
                       end
                     else
                       ref_trans.RES = (ref_trans.OPA >> ref_trans.OPB[`SHIFT_WIDTH - 1:0]) | (ref_trans.OPA << (`DATA_WIDTH - ref_trans.OPB[`SHIFT_WIDTH - 1: 0]));
@@ -359,13 +359,13 @@ endtask
 
 
                   default : begin 
-                    ref_trans.RES = 0;
+                    ref_trans.RES = 'bz;
                     ref_trans.ERR = 1;
                   end 
                 endcase
               end 
               default : begin   
-                ref_trans.RES = 0;
+                ref_trans.RES = 'bz;
                 ref_trans.ERR = 1;
               end 
             endcase

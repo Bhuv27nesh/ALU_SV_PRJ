@@ -1,5 +1,6 @@
-`define DATA_WIDTH 16
+`define DATA_WIDTH 8
 `define CMD_WIDTH 4
 
-`define num_transactions 20
+`define num_transaction 10
 
+`define SHIFT_WIDTH  $clog2(`DATA_WIDTH)

@@ -48,7 +48,7 @@ property CE_ASSERT;
 endproperty
 
 assert property(CE_ASSERT)
-  $info("CLK_EN PASSEED");
+  $info("CLK_EN PASSED");
   else
     $info("CLK_EN FAILED");
 
